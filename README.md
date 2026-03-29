@@ -1,17 +1,41 @@
-# EUS-EMG Sham vs MCAO Rat Classification Pipeline (MATLAB)
+# 大鼠 EUS-EMG 分析流程（MATLAB）
 
-This repository contains a public MATLAB pipeline for EUS-EMG analysis in a rat study, including:
+本儲存庫為國科會大專生研究計畫成果報告之補充程式碼說明，內容整理本研究使用之 MATLAB 分析流程，包含訊號前處理、固定長度視窗切割、短時傅立葉轉換（short-time Fourier transform, STFT）時頻圖建立、1D 及 2D 卷積神經網路（convolutional neural network, CNN）建模，以及老鼠層級融合分析等步驟。
 
-1. burst label loading from Excel
-2. EUS-EMG preprocessing and activity gating
-3. fixed-length window segmentation
-4. STFT image generation
-5. 1D CNN / 2D CNN leave-one-subject-out evaluation
-6. rat-level probability pooling
-7. stacking logistic regression fusion
-8. example figure export
+本儲存庫主要作為成果報告之補充說明與評審參考使用，並非作為通用型公開軟體工具。原始實驗資料未包含於本儲存庫中，故若需實際執行，仍須另行準備對應格式之標註檔與 MAT 原始資料。
 
-## Environment
+---
+
+## 一、儲存庫用途
+
+本儲存庫用於補充說明本研究之主要分析流程與程式架構，協助對照成果報告中的方法與結果。內容以公開版主程式、必要說明文件與示例輸出圖片為主，不包含完整原始資料。
+
+---
+
+## 二、主要程式檔案
+
+- `eus_run_main_public.m`  
+  本研究之公開版主程式，包含以下流程：
+  1. 讀取 burst 標註檔
+  2. 讀取 EUS-EMG 訊號並進行前處理
+  3. 進行活動門檻篩選與固定長度視窗切割
+  4. 將同一批視窗建立為 STFT 時頻圖
+  5. 執行留一個體交叉驗證（leave-one-subject-out, LOSO）之 1D、2D CNN 訓練與測試
+  6. 進行老鼠層級機率整合
+  7. 以 stacking logistic regression 進行融合分析
+  8. 輸出結果檔與示例圖片
+     
+- `plot_highlow_ratio_ratlevel.m`  
+  補充分析程式，用於計算傳統高低頻能量比（100–300 Hz / 50–100 Hz）之大鼠層級基準特徵，並輸出群組比較圖、個體分布圖。此程式對應成果報告中「基準比較：傳統頻帶能量比」之方法與結果。
+- `gradcam_examples.m`  
+  補充分析程式，用於讀取已儲存之 Grad-CAM 分析pack，輸出代表性高活動與低活動視窗的 1D、2D Grad-CAM 視覺化結果，包含原始波形、Grad-CAM 熱圖、STFT 時頻圖及疊合圖。此程式主要對應成果報告中「模型可解釋性分析與代表性圖示輸出」之方法與結果。
+- `eus_rf_lopo_burst_multiwindow.m`  
+  補充分析程式，用於比較不同固定視窗長度下之傳統特徵分類表現，並以 Random Forest 作為統一基準分類器進行留一個體驗證。此步驟主要用於視窗長度選擇，作為後續 1D / 2D CNN 正式分析之設定依據，而非本研究最終模型。
+---
+
+## 三、執行環境
+
+本研究程式使用下列環境與工具箱：
 
 - MATLAB R2024b
 - Deep Learning Toolbox
@@ -19,14 +43,84 @@ This repository contains a public MATLAB pipeline for EUS-EMG analysis in a rat 
 - Statistics and Machine Learning Toolbox
 - Image Processing Toolbox
 
-## Repository structure
+---
 
-```text
-.
-├─ eus_run_main_public.m
-├─ README.md
-├─ .gitignore
-├─ labels/
-│  └─ label_example.xlsx
-└─ results/
-   └─ example_outputs/
+## 四、資料格式說明
+
+本儲存庫**不包含原始 MAT 資料檔**。
+
+公開版程式目前會從 `.mat` 檔中讀取下列其中一種變數名稱：
+
+- `data`
+- `sig`
+- `RAW`
+
+若載入後之資料為結構體，且包含 `values` 欄位，則會使用其 `values` 內容。
+
+目前公開版程式之分析輸入為 EUS-EMG 訊號。在原始資料格式中，EUS-EMG 對應為第 2 個 channel；雖原始記錄可能同時包含膀胱壓訊號，但本流程中並未使用膀胱壓進行模型分析。
+
+---
+
+## 五、標註檔格式說明
+
+標註檔為 Excel 檔案，應至少包含兩個工作表：
+
+- `Sham`
+- `MCAO`
+
+每個工作表需包含下列欄位：
+
+- `file_path`
+- `start_s` 與 `end_s`  
+  或
+- `t0` 與 `t1`
+
+其中：
+
+- `file_path`：對應 MAT 檔案路徑
+- `start_s` / `t0`：burst 起始時間（秒）
+- `end_s` / `t1`：burst 結束時間（秒）
+
+本儲存庫中可放置 `label_example.xlsx` 作為格式示意。
+
+---
+
+## 六、輸出結果說明
+
+程式執行後，會於 `results/` 資料夾中輸出結果，內容可能包括：
+
+- 視窗化資料檔
+- 完整分析結果檔
+- 老鼠層級融合分數圖
+- 示例波形圖
+- 示例 STFT 圖
+
+其中示例圖片主要作為流程輸出格式展示，供成果報告對照參考使用。
+
+---
+
+## 七、備註
+
+1. 本儲存庫僅提供研究流程之補充程式碼與示例輸出，不包含完整原始實驗資料。
+2. 由於本研究資料與標註檔涉及本機路徑與研究資料整理，實際執行前需依使用者環境調整資料位置與標註內容。
+3. 本儲存庫之目的在於輔助說明成果報告內容，而非作為一般用途之公開分析套件。
+
+---
+
+## 八、對應關係說明
+
+本儲存庫內容主要對應成果報告中之以下部分：
+
+- 訊號前處理與品質控制
+- 固定長度視窗切割
+- 1D / 2D CNN 建模
+- 老鼠層級整合
+- 融合分析
+- 代表性輸出圖示
+  
+- `plot_highlow_ratio_ratlevel.m`：對應傳統頻帶能量比基準比較
+- `eus_rf_lopo_burst_multiwindow.m`：對應視窗長度比較與主要設定選擇
+- `eus_run_main_public.m`：對應主要深度學習分析流程
+- `gradcam_examples.m`：對應代表性 Grad-CAM 視覺化輸出
+
+評審可搭配成果報告正文與本儲存庫內容相互對照，以理解本研究之主要分析流程與程式架構。
