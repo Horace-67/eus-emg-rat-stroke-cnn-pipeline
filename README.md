@@ -1,4 +1,4 @@
-# EUS-EMG Rat Classification Pipeline (MATLAB)
+# EUS-EMG Sham vs MCAO Rat Classification Pipeline (MATLAB)
 
 This repository contains a public MATLAB pipeline for EUS-EMG analysis in a rat study, including:
 
